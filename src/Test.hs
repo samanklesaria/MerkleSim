@@ -12,8 +12,8 @@ fromFold = F.foldMap singleton
 
 toList :: Patricia -> [BitString]
 toList Null = []
-toList (Inner p True l r) = p : map (p <>) (toList l ++ toList r)
-toList (Inner p False l r) = map (p <>) (toList l ++ toList r)
+toList (Inner _ p True l r) = p : map (p <>) (toList l ++ toList r)
+toList (Inner _ p False l r) = map (p <>) (toList l ++ toList r)
 
 toSet = S.fromList . toList
 

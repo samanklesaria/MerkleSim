@@ -7,20 +7,25 @@ import Data.Vector.Unboxed (Vector)
 import qualified Data.Vector.Unboxed as V
 import Data.Word
 import Data.Bits
+import qualified Crypto.Hash.SHA256 as C
 
 type BitString = Vector Bool
 
 fromByteString :: ByteString -> BitString
-fromByteString = V.fromList . build where
-   build (B.uncons -> Nothing) = []
-   build (B.uncons -> Just (x, xs)) = blast x ++ build xs
+fromByteString = mconcat . map blast . B.unpack
 
-blast :: Word8 -> [Bool]
-blast w = map (testBit w) [0..8]
+blast :: Word8 -> BitString
+blast w = V.generate 8 (testBit w)
+
+toByteString :: BitString -> ByteString
+toByteString = undefined
 
 data Patricia = Null | Inner {
-  path::BitString, val::Bool,
+  hash_ :: BitString, path::BitString, val::Bool,
   left::Patricia, right::Patricia} deriving Show
+
+hash Null = V.empty
+hash p = hash_ p
 
 instance Semigroup Patricia where
   a <> Null = a
@@ -32,22 +37,34 @@ instance Semigroup Patricia where
 instance Monoid Patricia where
   mempty = Null
 
+bxor:: BitString -> BitString -> BitString
+bxor a b  = V.zipWith xor a b 
+
 singleton :: BitString -> Patricia
-singleton a = Inner a True Null Null
+singleton a = Inner a a True Null Null
+
+mk v l r s = Inner h p v l r where
+  p = V.fromList $ reverse s
+  h = foldr1 bxor $ (if v then [p] else []) ++ [hash r, hash l]
 
 merge :: (Patricia, Patricia) -- | A pair of tries
          -> BitString -- | Remaining shared bits of left tree
          -> BitString -- | Remaining shared bits of right tree
          -> [Bool] -- | Shared bits of both (backwards)
          -> Patricia
-merge (a,b) (V.uncons -> Nothing) y@(V.uncons -> Nothing) s =
-  Inner (V.fromList $ reverse s) (val a || val b)
-    (left a <> left b) (right a <> right b)
-merge (a,b) (V.uncons -> Nothing) y@(V.uncons -> Just (True, _)) s =
-  Inner (V.fromList $ reverse s) (val a) (left a) (right a <> b{path=y})
-merge (a,b) (V.uncons -> Nothing) y@(V.uncons -> Just (False, _)) s =
-  Inner (V.fromList $ reverse s) (val a) (left a <> b{path=y}) (right a)
+merge (a,b) (V.uncons -> Nothing) y@(V.uncons -> Nothing) s = mk v l r s where
+  v = val a || val b
+  l = left a <> left b
+  r = right a <> right b
+merge (a,b) (V.uncons -> Nothing) y@(V.uncons -> Just (True, _)) s = mk v l r s where
+  v = val a
+  l = left a
+  r = right a <> b{path=y}
+merge (a,b) (V.uncons -> Nothing) y@(V.uncons -> Just (False, _)) s = mk v l r s where
+  v = val a
+  l = left a <> b{path=y}
+  r = right a
 merge (a,b) x@(V.uncons -> Just (p,ps)) y@(V.uncons -> Just (q,qs)) s
       | p == q = merge (a,b) ps qs (p : s)
-      | p < q = Inner (V.fromList $ reverse s) False a{path=x} b{path=y}
-      | otherwise = Inner (V.fromList $ reverse s) False b{path=y} a{path=x}
+      | p < q = mk False a{path=x} b{path=y} s
+      | otherwise = mk False b{path=y} a{path=x} s
