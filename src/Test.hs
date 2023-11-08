@@ -1,9 +1,7 @@
 module Test where
 import Patricia
 import qualified Data.Vector.Unboxed as V
-import Data.Vector.Unboxed (Vector)
 import Test.QuickCheck
-import Data.Foldable (foldMap')
 import qualified Data.Foldable as F
 import qualified Data.Set as S
 
@@ -15,6 +13,7 @@ toList Null = []
 toList (Inner _ _ p True l r) = p : map (p <>) (toList l ++ toList r)
 toList (Inner _ _ p False l r) = map (p <>) (toList l ++ toList r)
 
+toSet :: Patricia -> S.Set BitString
 toSet = S.fromList . toList
 
 prop_commutative x = do
