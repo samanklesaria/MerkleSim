@@ -21,11 +21,14 @@ toByteString :: BitString -> ByteString
 toByteString = undefined
 
 data Patricia = Null | Inner {
-  hash_ :: BitString, path::BitString, val::Bool,
+  len_ :: Word64, hash_ :: BitString, path::BitString, val::Bool,
   left::Patricia, right::Patricia} deriving Show
 
 hash Null = V.empty
 hash p = hash_ p
+
+len Null = 0
+len p = len_ p
 
 instance Semigroup Patricia where
   a <> Null = a
@@ -41,9 +44,9 @@ bxor:: BitString -> BitString -> BitString
 bxor a b  = V.zipWith xor a b 
 
 singleton :: BitString -> Patricia
-singleton a = Inner a a True Null Null
+singleton a = Inner 1 a a True Null Null
 
-mk v l r s = Inner h p v l r where
+mk v l r s = Inner (len l + len r) h p v l r where
   p = V.fromList $ reverse s
   h = foldr1 bxor $ (if v then [p] else []) ++ [hash r, hash l]
 
