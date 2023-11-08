@@ -1,39 +1,39 @@
 module Test where
 import Patricia
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as B
+import qualified Data.Vector.Unboxed as V
+import Data.Vector.Unboxed (Vector)
 import Test.QuickCheck
 import Data.Foldable (foldMap')
 import qualified Data.Foldable as F
 import qualified Data.Set as S
 
-prop_noparent = ancestor a b === (a, b, B.empty) where
-  a = B.pack [0]
-  b = B.pack [1]
+fromFold :: Foldable t => t BitString -> Patricia
+fromFold = F.foldMap singleton
 
-fromFold :: Foldable t => t ByteString -> Patricia
-fromFold = F.foldr insert Null
-
-toList :: Patricia -> [ByteString]
+toList :: Patricia -> [BitString]
 toList Null = []
-toList (Leaf a) = [a]
-toList (Inner p s) = map (p <>) $ foldMap' toList s
+toList (Inner p True l r) = p : map (p <>) (toList l ++ toList r)
+toList (Inner p False l r) = map (p <>) (toList l ++ toList r)
 
-toSet = S.fromList . map B.unpack . toList
+toSet = S.fromList . toList
 
 prop_commutative x = do
   y <- shuffle x
-  let a = toSet (fromFold $ map B.pack y)
-      b = toSet (fromFold $ map B.pack x)
+  let a = toSet (fromFold $ map V.fromList y)
+      b = toSet (fromFold $ map V.fromList x)
   return $ a === b
 
-prop_dec_enc x = counterexample (show patricia) (result === x) where
-  patricia = fromFold $ S.map B.pack x
+prop_dec_enc x = counterexample (show patricia) (result === y) where
+  y = S.map V.fromList x
+  patricia = fromFold y
   result = toSet patricia
 
--- Properties to test:
--- the number of operations after n inserts scales as n log n
-
+prop_idemp (map V.fromList -> x) = do
+  y <- shuffle x
+  let both = x ++ y
+      a = toSet $ fromFold both
+      b = toSet $ fromFold x
+  return $ a === b
 
 return []
 runTests = $quickCheckAll

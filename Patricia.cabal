@@ -24,7 +24,7 @@ extra-source-files: CHANGELOG.md
 library
     exposed-modules:  Patricia, Sim, Test
     default-extensions: FlexibleContexts, FlexibleInstances, TemplateHaskell,
-                        ViewPatterns, NumericUnderscores
+                        ViewPatterns, NumericUnderscores, BangPatterns
 
     -- Modules included in this library but not exported.
     -- other-modules:

@@ -1,39 +1,53 @@
+{-# LANGUAGE StrictData #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Patricia where
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
-import Data.Set (Set)
-import qualified Data.Set as S
+import Data.Vector.Unboxed (Vector)
+import qualified Data.Vector.Unboxed as V
+import Data.Word
+import Data.Bits
 
-data Patricia = Null | Leaf ByteString |
-      Inner ByteString (Set Patricia)  deriving Show
+type BitString = Vector Bool
 
-path Null = B.empty
-path (Leaf a) = a
-path (Inner a _) = a
+fromByteString :: ByteString -> BitString
+fromByteString = V.fromList . build where
+   build (B.uncons -> Nothing) = []
+   build (B.uncons -> Just (x, xs)) = blast x ++ build xs
 
-instance Eq Patricia where
-  Leaf a == Leaf b = a == b
-  Null == Null = True
-  a == b = False
+blast :: Word8 -> [Bool]
+blast w = map (testBit w) [0..8]
 
-instance Ord Patricia where
-  compare a b = compare (path a) (path b)
+data Patricia = Null | Inner {
+  path::BitString, val::Bool,
+  left::Patricia, right::Patricia} deriving Show
 
-ancestor :: ByteString -> ByteString -> (ByteString, ByteString, ByteString)
-ancestor a b = (l, r, B.pack $ reverse s) where
-  (l, r, s) = worker a b []
-  worker a@(B.uncons -> Nothing) b s = (a, b, s)
-  worker a b@(B.uncons -> Nothing) s = (a, b, s)
-  worker a@(B.uncons -> Just (x,xs)) b@(B.uncons -> Just (y,ys)) s
-    | x == y = worker xs ys (x : s)
-    | otherwise = (a, b, s)
+instance Semigroup Patricia where
+  a <> Null = a
+  Null <> b = b
+  a <> b
+    | V.length (path a) > V.length (path b) = merge (b,a) (path b) (path a) []
+    | otherwise = merge (a,b) (path a) (path b) []
 
-insert :: ByteString -> Patricia -> Patricia
-insert a Null = Leaf a
-insert a (Leaf b) = Inner shared (S.fromList [Leaf l, Leaf r]) where
-  (l, r, shared) = ancestor a b
-insert a (Inner b v)
-    | B.null r = Inner shared (S.insert (Leaf l) v)
-    | otherwise = Inner shared (S.fromList [Leaf l, Inner r v])
-  where
-    (l, r, shared) = ancestor a b
+instance Monoid Patricia where
+  mempty = Null
+
+singleton :: BitString -> Patricia
+singleton a = Inner a True Null Null
+
+merge :: (Patricia, Patricia) -- | A pair of tries
+         -> BitString -- | Remaining shared bits of left tree
+         -> BitString -- | Remaining shared bits of right tree
+         -> [Bool] -- | Shared bits of both (backwards)
+         -> Patricia
+merge (a,b) (V.uncons -> Nothing) y@(V.uncons -> Nothing) s =
+  Inner (V.fromList $ reverse s) (val a || val b)
+    (left a <> left b) (right a <> right b)
+merge (a,b) (V.uncons -> Nothing) y@(V.uncons -> Just (True, _)) s =
+  Inner (V.fromList $ reverse s) (val a) (left a) (right a <> b{path=y})
+merge (a,b) (V.uncons -> Nothing) y@(V.uncons -> Just (False, _)) s =
+  Inner (V.fromList $ reverse s) (val a) (left a <> b{path=y}) (right a)
+merge (a,b) x@(V.uncons -> Just (p,ps)) y@(V.uncons -> Just (q,qs)) s
+      | p == q = merge (a,b) ps qs (p : s)
+      | p < q = Inner (V.fromList $ reverse s) False a{path=x} b{path=y}
+      | otherwise = Inner (V.fromList $ reverse s) False b{path=y} a{path=x}
