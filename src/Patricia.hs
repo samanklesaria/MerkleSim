@@ -7,7 +7,10 @@ import Data.Vector.Unboxed (Vector)
 import qualified Data.Vector.Unboxed as V
 import Data.Word
 import Data.Bits
-import Control.Monad.Writer
+import Control.Monad.Writer.Strict
+import Msg
+import qualified Crypto.Hash.SHA256 as C
+import Data.ByteString.Builder
 
 type BitString = Vector Bool
 
@@ -21,7 +24,7 @@ toByteString :: BitString -> ByteString
 toByteString = undefined
 
 data Patricia = Null | Inner {
-  len_ :: Word64, hash_ :: BitString, path_::BitString, val::Bool,
+  hash_ :: BitString, path_::BitString, val::Bool,
   left::Patricia, right::Patricia} deriving Show
 
 hash :: Patricia -> Vector Bool
@@ -36,31 +39,27 @@ setPath :: Patricia -> BitString -> Patricia
 setPath Null _ = Null
 setPath a b = a{path_=b}
 
-len :: Patricia -> Word64
-len Null = 0
-len p = len_ p
-
 instance Semigroup Patricia where
   a <> b = fst . runWriter $ lub a b
-
-lub :: Patricia -> Patricia -> Counting Patricia
-lub a b
-    | V.length (path a) > V.length (path b) = merge (b,a) (path b) (path a) []
-    | otherwise = merge (a,b) (path a) (path b) []
 
 instance Monoid Patricia where
   mempty = Null
 
-type Counting = Writer (Sum Word64) 
+instance Msg Patricia where
+  noMsgs = return Null
+  lub a b
+      | V.length (path a) > V.length (path b) = merge (b,a) (path b) (path a) []
+      | otherwise = merge (a,b) (path a) (path b) []
+  atTime = return . singleton . fromByteString . C.hashlazy . toLazyByteString . doubleBE
 
 bxor:: BitString -> BitString -> BitString
 bxor = V.zipWith xor
 
 singleton :: BitString -> Patricia
-singleton a = Inner 1 a a True Null Null
+singleton a = Inner a a True Null Null
 
-mk :: Monad m => Bool -> Patricia -> Patricia -> [Bool] -> m Patricia
-mk v l r s = return $ Inner (len l + len r) h p v l r where
+mk :: MonadWriter (Sum Word64) m => Bool -> Patricia -> Patricia -> [Bool] -> m Patricia
+mk v l r s =  writer (Inner h p v l r, Sum 1) where
   p = V.fromList $ reverse s
   h = foldr1 bxor $ [p | v] ++ [hash r, hash l]
 
@@ -69,9 +68,9 @@ merge :: (Patricia, Patricia) -- | A pair of tries
          -> BitString -- | Remaining shared bits of right tree
          -> [Bool] -- | Shared bits of both (backwards)
          -> Counting Patricia
+
 merge (Null, a) _ _ _ = return a
 merge (a, Null) _ _ _ = return a
-
 merge (a,b) (V.uncons -> Nothing) (V.uncons -> Nothing) s = do
   l <- left a `lub` left b
   r <- right a `lub` right b

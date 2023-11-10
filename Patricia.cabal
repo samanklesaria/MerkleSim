@@ -22,9 +22,9 @@ maintainer:         anklesaria@utexas.edu
 extra-source-files: CHANGELOG.md
 
 library
-    exposed-modules:  Patricia, Sim, Test
+    exposed-modules:  Patricia, Sim, Test, Main
     default-extensions: FlexibleContexts, FlexibleInstances, TemplateHaskell,
-                        ViewPatterns, NumericUnderscores, BangPatterns
+                        ViewPatterns, NumericUnderscores, BangPatterns, ScopedTypeVariables
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -33,7 +33,7 @@ library
     -- other-extensions:
     build-depends:    base ^>=4.15.1.0, splitmix, random-fu, data-ordlist,
                       bytestring, QuickCheck, vector, containers, parallel,
-                      cryptohash-sha256, mtl
+                      cryptohash-sha256, mtl, foldl
     hs-source-dirs:   src
     default-language: Haskell2010
     ghc-options: -O2
