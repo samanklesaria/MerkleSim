@@ -22,7 +22,7 @@ maintainer:         anklesaria@utexas.edu
 extra-source-files: CHANGELOG.md
 
 library
-    exposed-modules:  Patricia, Sim, Test, Main
+    exposed-modules:  Patricia, Sim, Test, Main, Msg, TimeTrie
     default-extensions: FlexibleContexts, FlexibleInstances, TemplateHaskell,
                         ViewPatterns, NumericUnderscores, BangPatterns, ScopedTypeVariables
 

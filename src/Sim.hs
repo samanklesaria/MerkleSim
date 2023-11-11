@@ -59,3 +59,7 @@ simulate n = do
   start <- V.replicate n noMsgs
   mvec <- foldM process start (takeWhile (\x-> time x < 5) events)
   unsafeFreeze mvec
+
+-- we also need to account for hash collisions.
+-- are the number of hash collisions and the number
+-- of time collisions roughly comparable?
