@@ -6,6 +6,6 @@ import Data.Word
 type Counting = Writer (Sum Word64) 
 
 class Msg a where
-  noMsgs :: Counting a
-  atTime :: Double -> Counting a
+  noMsgs :: a
+  atTime :: Double -> a
   lub :: a -> a -> Counting a

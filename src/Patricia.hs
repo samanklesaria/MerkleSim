@@ -46,11 +46,12 @@ instance Monoid Patricia where
   mempty = Null
 
 instance Msg Patricia where
-  noMsgs = return Null
+  noMsgs = Null
   lub a b
+      | hash a == hash b = return a
       | V.length (path a) > V.length (path b) = merge (b,a) (path b) (path a) []
       | otherwise = merge (a,b) (path a) (path b) []
-  atTime = return . singleton . fromByteString . C.hashlazy . toLazyByteString . doubleBE
+  atTime = singleton . fromByteString . C.hashlazy . toLazyByteString . doubleBE
 
 bxor:: BitString -> BitString -> BitString
 bxor = V.zipWith xor

@@ -1,4 +1,4 @@
-module Test where
+module PatriciaTest where
 import Patricia
 import qualified Data.Vector.Unboxed as V
 import Test.QuickCheck

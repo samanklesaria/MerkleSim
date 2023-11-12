@@ -1,18 +1,19 @@
 module Main where
 import Control.Concurrent
 import Sim
+import Chain
 import Patricia
-import Data.Bits
-import qualified Crypto.Hash.SHA256 as C
-import qualified Data.ByteString as B
-import Data.ByteString.Builder
-import qualified Data.Vector as V
-import Control.Monad.Writer.Strict
-import qualified Control.Foldl as F
 import Msg
+import Graphics.Gnuplot.Simple
+import Control.Parallel
+
+title t = defaultStyle{lineSpec = CustomStyle [LineTitle t]}
 
 main = do
   setNumCapabilities 7
-  v <- simulate 2
-  return . F.fold F.mean $ V.map (fromIntegral . getSum . execWriter)
-    (v :: V.Vector (Counting Patricia))
+  (times, avgs) <- simulate (noMsgs :: Chain') 60 10
+  (times2, avgs2) <- avgs `par` simulate (noMsgs :: Patricia) 60 10
+  plotPathsStyle [] [(title "Chain", zip times avgs), (title "Patricia", zip times2 avgs2)]
+
+-- You could test on shuffled events to ensure that the time is helping as you think it should.
+-- Then make a model in which gossiping peers go offline for exponential amounts of time. 
