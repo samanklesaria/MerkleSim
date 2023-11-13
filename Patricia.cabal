@@ -22,7 +22,7 @@ maintainer:         anklesaria@utexas.edu
 extra-source-files: CHANGELOG.md
 
 library
-    exposed-modules:  Patricia, Sim, PatriciaTest, Main, Msg, TimeTrie, Compat, Chain, ChainTest
+    exposed-modules:  Patricia, Sim, PatriciaTest, Msg, TimeTrie, Compat, Chain, ChainTest
     default-extensions: FlexibleContexts, FlexibleInstances, TemplateHaskell, TupleSections,
                         ViewPatterns, NumericUnderscores, BangPatterns, ScopedTypeVariables,
                         DeriveFoldable
@@ -34,8 +34,17 @@ library
     -- other-extensions:
     build-depends:    base ^>=4.15.1.0, splitmix, random-fu, data-ordlist,
                       bytestring, QuickCheck, vector, containers, parallel,
-                      cryptohash-sha256, mtl, gnuplot
+                      cryptohash-sha256, mtl
     hs-source-dirs:   src
     default-language: Haskell2010
     ghc-options: -O2
     -- ghc-options:         -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wmi
+
+executable proglet
+  main-is: Main.hs
+  build-depends: base ^>=4.15.1.0, Patricia, parallel, Chart, Chart-cairo
+  ghc-options:
+    -O2
+    -threaded
+    -fprof-auto
+    "-with-rtsopts=-N -p -s -hc -i0.1"

@@ -1,3 +1,4 @@
+{-# LANGUAGE StrictData #-}
 module Chain where
 import Msg
 import Control.Monad.Writer.Strict
