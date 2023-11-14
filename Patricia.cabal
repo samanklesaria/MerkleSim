@@ -42,9 +42,9 @@ library
 
 executable proglet
   main-is: Main.hs
-  build-depends: base ^>=4.15.1.0, Patricia, parallel, Chart, Chart-cairo
+  build-depends: base ^>=4.15.1.0, Patricia, vector, Chart, Chart-cairo
   ghc-options:
     -O2
     -threaded
-    -fprof-auto
-    "-with-rtsopts=-N -p -s -hc -i0.1"
+    -- -fprof-auto
+    -- "-with-rtsopts=-N -p -s -hc -i0.1"

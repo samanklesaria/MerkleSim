@@ -5,6 +5,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Vector.Unboxed (Vector)
 import qualified Data.Vector.Unboxed as V
+import Data.Maybe
 import Data.Word
 import Data.Bits
 import Control.Monad.Writer.Strict
@@ -24,12 +25,12 @@ toByteString :: BitString -> ByteString
 toByteString = undefined
 
 data Patricia = Null | Inner {
-  hash_ :: BitString, path_::BitString, val::Bool,
+  hash_ :: ByteString, path_::BitString, val::Bool,
   left::Patricia, right::Patricia} deriving Show
 
-hash :: Patricia -> Vector Bool
-hash Null = V.empty
-hash p = hash_ p
+hash :: Patricia -> Maybe ByteString
+hash Null = Nothing
+hash p = Just $ hash_ p
 
 path :: Patricia -> BitString
 path Null = V.empty
@@ -51,18 +52,18 @@ instance Msg Patricia where
       | hash a == hash b = return a
       | V.length (path a) > V.length (path b) = merge (b,a) (path b) (path a) []
       | otherwise = merge (a,b) (path a) (path b) []
-  atTime = singleton . fromByteString . C.hashlazy . toLazyByteString . doubleBE
+  atTime = singleton .  C.hashlazy . toLazyByteString . doubleBE
 
 bxor:: BitString -> BitString -> BitString
 bxor = V.zipWith xor
 
-singleton :: BitString -> Patricia
-singleton a = Inner a a True Null Null
+singleton :: ByteString -> Patricia
+singleton a = Inner a (fromByteString a) True Null Null
 
 mk :: MonadWriter (Sum Word64) m => Bool -> Patricia -> Patricia -> [Bool] -> m Patricia
 mk v l r s =  writer (Inner h p v l r, Sum 1) where
   p = V.fromList $ reverse s
-  h = foldr1 bxor $ [p | v] ++ [hash r, hash l]
+  h = C.finalize $ C.updates C.init $ [toByteString p | v] ++ catMaybes [hash r, hash l]
 
 merge :: (Patricia, Patricia) -- | A pair of tries
          -> BitString -- | Remaining shared bits of left tree

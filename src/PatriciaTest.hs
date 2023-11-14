@@ -6,7 +6,7 @@ import qualified Data.Foldable as F
 import qualified Data.Set as S
 
 fromFold :: Foldable t => t BitString -> Patricia
-fromFold = F.foldMap singleton
+fromFold = F.foldMap (singleton . toByteString)
 
 toList :: Patricia -> [BitString]
 toList Null = []
