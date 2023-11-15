@@ -22,10 +22,10 @@ maintainer:         anklesaria@utexas.edu
 extra-source-files: CHANGELOG.md
 
 library
-    exposed-modules:  Patricia, Sim, PatriciaTest, Msg, Compat, Chain, ChainTest, SampleTest
+    exposed-modules:  Patricia, Sim, PatriciaTest, Msg, Compat, Chain, ChainTest, SampleTest, PatChain, PatChainTest
     default-extensions: FlexibleContexts, FlexibleInstances, TemplateHaskell, TupleSections,
                         ViewPatterns, NumericUnderscores, BangPatterns, ScopedTypeVariables,
-                        DeriveFoldable
+                        DeriveFoldable, KindSignatures, TypeApplications
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -42,7 +42,8 @@ library
 
 executable proglet
   main-is: Main.hs
-  build-depends: base ^>=4.15.1.0, Patricia, vector, Chart, Chart-cairo
+  build-depends: base ^>=4.15.1.0, Patricia, vector, Chart, Chart-cairo, criterion,
+                 bytestring, cryptohash
   ghc-options:
     -O2
     -threaded

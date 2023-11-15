@@ -67,7 +67,7 @@ creates v i = do
   noise <- ZipList . samples (Normal 0 v) <$> newSMGen
   return $ getZipList $ mkCreate i <$> times <*> noise
 
-interval = 1.0
+interval = 0.5
 
 sampleSum :: Double -> Int -> [(Double, a)] -> [a]
 sampleSum interval _ [] = []
