@@ -34,8 +34,8 @@ samples d = loop where
 
 mkSend :: Int -> Int -> Int -> Double -> Double -> Action
 mkSend n i j t e
-    | i == j = Send i (n-1) t (t+e)
-    | otherwise = Send i j t (t+e)
+    | i == j = Send i (n-1) t (t-e)
+    | otherwise = Send i j t (t-e)
 
 process :: Msg a => MVec (a, Word64) -> Action -> IO (MVec (a, Word64), Double)
 process v (Create i _ t) = do
@@ -52,12 +52,12 @@ process v (Send i j _ _) = do
   return $ (ab `seq` dw) `par` (v, 2 * fromIntegral dw / fromIntegral (V.length v))
 
 mkCreate :: Int -> Double -> Double -> Action
-mkCreate i t e = Create i t (t + e)
+mkCreate i t e = Create i t (t - e)
 
 sends :: Double -> Int -> Int -> IO [Action]
 sends v n i = do
   times <- ZipList . poisson 0.5 <$> newSMGen
-  noise <- ZipList . samples (Normal 0 v) <$> newSMGen
+  noise <- ZipList . samples (Exp v) <$> newSMGen
   sendTo <- ZipList . samples (Uniform 0 (n-1)) <$> newSMGen
   return $ getZipList $ mkSend n i <$> sendTo <*> times <*> noise
 
@@ -67,6 +67,13 @@ creates v i = do
   noise <- ZipList . samples (Normal 0 v) <$> newSMGen
   return $ getZipList $ mkCreate i <$> times <*> noise
 
+interval = 1.0
+
+sampleSum :: Double -> Int -> [(Double, a)] -> [a]
+sampleSum interval _ [] = []
+sampleSum interval prev ((t, s):xs) = replicate (n - prev) s ++ sampleSum interval n xs where
+  n = floor $ t / interval
+
 simulate :: Msg a => a -> Double -> Int -> Double -> IO ([Double], [Double])
 simulate a v n t = do
   sendActions <- mapM (sends v n) [0..n-1]
@@ -75,6 +82,5 @@ simulate a v n t = do
   start <- V.replicate n (a, 0)
   let life = takeWhile (\x-> time x < t) events
   (counts, _) <- mapAccumM process start life
-  return (time <$> life, scanl1 (+) counts)
+  return ([0,interval..t], sampleSum interval (-1) $ zip (time <$> life)  (scanl1 (+) counts))
 
--- we also need to account for hash collisions.

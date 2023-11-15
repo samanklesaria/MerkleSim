@@ -10,7 +10,7 @@ import Data.Word
 import Data.Bits
 import Control.Monad.Writer.Strict
 import Msg
-import qualified Crypto.Hash.SHA256 as C
+import qualified Crypto.Hash.MD5 as C
 import Data.ByteString.Builder
 
 type BitString = Vector Bool
@@ -53,9 +53,6 @@ instance Msg Patricia where
       | V.length (path a) > V.length (path b) = merge (b,a) (path b) (path a) []
       | otherwise = merge (a,b) (path a) (path b) []
   atTime = singleton .  C.hashlazy . toLazyByteString . doubleBE
-
-bxor:: BitString -> BitString -> BitString
-bxor = V.zipWith xor
 
 singleton :: ByteString -> Patricia
 singleton a = Inner a (fromByteString a) True Null Null

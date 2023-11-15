@@ -2,7 +2,7 @@
 module Chain where
 import Msg
 import Control.Monad.Writer.Strict
-import qualified Crypto.Hash.SHA256 as C
+import qualified Crypto.Hash.MD5 as C
 import Data.ByteString.Builder
 import Data.ByteString (ByteString)
 
