@@ -15,6 +15,9 @@ import Data.ByteString.Builder
 
 type BitString = Vector Bool
 
+encode :: Double -> BitString
+encode = fromByteString . C.hashlazy . toLazyByteString . doubleBE
+
 fromByteString :: ByteString -> BitString
 fromByteString = mconcat . map blast . B.unpack
 
