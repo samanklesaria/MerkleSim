@@ -12,7 +12,7 @@ import Control.Applicative
 import Patricia
 import Data.Word
 import Msg
-import Compat
+import Data.Traversable.Compat
 
 type MVec = V.IOVector
 
@@ -81,6 +81,6 @@ simulate a v n t = do
   let events = foldr O.merge [] (sendActions <> createActions)
   start <- V.replicate n (a, 0)
   let life = takeWhile (\x-> time x < t) events
-  (counts, _) <- mapAccumM process start life
+  (_, counts) <- mapAccumM process start life
   return ([0,interval..t], sampleSum interval (-1) $ zip (time <$> life)  (scanl1 (+) counts))
 
