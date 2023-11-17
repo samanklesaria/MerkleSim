@@ -32,7 +32,7 @@ library
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:    base ^>=4.15.1.0, splitmix, random-fu, data-ordlist,
+    build-depends:    base, splitmix, random-fu, data-ordlist,
                       bytestring, QuickCheck, vector, containers, parallel,
                       cryptohash, mtl, base-compat
     hs-source-dirs:   src
@@ -42,7 +42,7 @@ library
 
 executable proglet
   main-is: Main.hs
-  build-depends: base ^>=4.15.1.0, Patricia, vector, Chart, Chart-cairo, parallel
+  build-depends: base, Patricia, vector, Chart, Chart-cairo, parallel
   ghc-options:
     -O2
     -threaded

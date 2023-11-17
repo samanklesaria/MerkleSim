@@ -55,7 +55,7 @@ instance Msg Patricia where
       | hash a == hash b = return a
       | V.length (path a) > V.length (path b) = merge (b,a) (path b) (path a) []
       | otherwise = merge (a,b) (path a) (path b) []
-  atTime = singleton .  C.hashlazy . toLazyByteString . doubleBE
+  atTime t _ = singleton .  C.hashlazy . toLazyByteString $ doubleBE t
 
 singleton :: ByteString -> Patricia
 singleton a = Inner a (fromByteString a) True Null Null

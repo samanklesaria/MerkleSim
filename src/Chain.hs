@@ -11,7 +11,7 @@ data Chain a = Null | Cons a ByteString (Chain a) deriving (Show, Eq, Foldable)
 type Chain' = Chain Double
 
 cons :: Double -> Chain' -> Chain'
-cons a Null = atTime a
+cons a Null = atTime a 1
 cons a b@(Cons _ h _) = Cons a hash b  where
   hash = C.hashlazy . toLazyByteString  $ (doubleBE a <> byteString h)
 
@@ -24,4 +24,4 @@ instance Msg Chain' where
       | y == x = writer (cons x, Sum 1) <*>  lub xs ys
       | y > x = writer (cons y, Sum 1) <*> lub a ys
       | otherwise = writer (cons x, Sum 1) <*> lub xs b
-  atTime t = Cons t (C.hashlazy . toLazyByteString  $ doubleBE t) Null
+  atTime t _ = Cons t (C.hashlazy . toLazyByteString  $ doubleBE t) Null

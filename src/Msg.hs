@@ -7,5 +7,5 @@ type Counting = Writer (Sum Word64)
 
 class Msg a where
   noMsgs :: a
-  atTime :: Double -> a
+  atTime :: Double -> Double -> a
   lub :: a -> a -> Counting a

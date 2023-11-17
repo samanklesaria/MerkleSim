@@ -37,13 +37,13 @@ mkSend n i j t e
     | i == j = Send i (n-1) t (t-e)
     | otherwise = Send i j t (t-e)
 
-process :: Msg a => MVec (a, Word64) -> Action -> IO (MVec (a, Word64), Double)
-process v (Create i _ t) = do
+process :: Msg a => Double -> MVec (a, Word64) -> Action -> IO (MVec (a, Word64), Double)
+process s v (Create i _ t) = do
   (a, w) <- V.read v i
-  let (a', dw) = fmap getSum . runWriter $ lub a (atTime t)
+  let (a', dw) = fmap getSum . runWriter $ lub a (atTime t s)
   V.write v i (a', w + dw)
   return (v, fromIntegral dw / fromIntegral (V.length v))
-process v (Send i j _ _) = do
+process _ v (Send i j _ _) = do
   (a, wa) <- V.read v i
   (b, wb) <- V.read v j
   let (ab, dw) = fmap getSum . runWriter $ lub a b
@@ -54,16 +54,16 @@ process v (Send i j _ _) = do
 mkCreate :: Int -> Double -> Double -> Action
 mkCreate i t e = Create i t (t - e)
 
-sends :: Double -> Int -> Int -> IO [Action]
-sends v n i = do
-  times <- ZipList . poisson 0.5 <$> newSMGen
+sends :: Double -> Double -> Int -> Int -> IO [Action]
+sends v b n i = do
+  times <- ZipList . poisson b <$> newSMGen
   noise <- ZipList . samples (Exp v) <$> newSMGen
   sendTo <- ZipList . samples (Uniform 0 (n-1)) <$> newSMGen
   return $ getZipList $ mkSend n i <$> sendTo <*> times <*> noise
 
-creates :: Double -> Int -> IO [Action]
-creates v i = do
-  times <- ZipList . poisson 1.0 <$> newSMGen
+creates :: Double -> Double -> Int -> IO [Action]
+creates v a i = do
+  times <- ZipList . poisson a <$> newSMGen
   noise <- ZipList . samples (Normal 0 v) <$> newSMGen
   return $ getZipList $ mkCreate i <$> times <*> noise
 
@@ -74,13 +74,19 @@ sampleSum interval _ [] = []
 sampleSum interval prev ((t, s):xs) = replicate (n - prev) s ++ sampleSum interval n xs where
   n = floor $ t / interval
 
-simulate :: Msg a => a -> Double -> Int -> Double -> IO ([Double], [Double])
-simulate a v n t = do
-  sendActions <- mapM (sends v n) [0..n-1]
-  createActions <- mapM (creates v) [0..n-1]
+simulate :: Msg a => a -- | Initial state at each node
+  -> Double -- | Scale of noise distribution
+  -> Double -- | Scale of gossip Poisson process
+  -> Double -- | Scale of message generation Poisson process
+  -> Int    -- | Number of nodes
+  -> Double -- | End time of simulation
+  -> IO ([Double], [Double])
+simulate st v b a n t = do
+  sendActions <- mapM (sends v b n) [0..n-1]
+  createActions <- mapM (creates v a) [0..n-1]
   let events = foldr O.merge [] (sendActions <> createActions)
-  start <- V.replicate n (a, 0)
+  start <- V.replicate n (st, 0)
   let life = takeWhile (\x-> time x < t) events
-  (_, counts) <- mapAccumM process start life
+  (_, counts) <- mapAccumM (process (v + b)) start life
   return ([0,interval..t], sampleSum interval (-1) $ zip (time <$> life)  (scanl1 (+) counts))
 
