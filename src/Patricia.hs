@@ -10,6 +10,7 @@ import Util
 import qualified Crypto.Hash as C
 import GHC.Generics (Generic)
 import Control.DeepSeq
+import Control.Exception (assert)
 
 data Patricia = Null | Inner {
   hash :: Hash, path:: Word64, mask :: Word64,
@@ -34,20 +35,25 @@ instance Semigroup Patricia where
 instance Monoid Patricia where
   mempty = Null
 
-rightmost a = a .&. (-a)
 
-diffPos a b = rightmost (bitDiff .|. maskDiff) where
+rightmost :: Word64 -> Word64
+rightmost !a = a .&. (-a)
+
+diffPos :: Patricia -> Patricia -> Word64
+diffPos !a !b = rightmost (bitDiff .|. maskDiff) where
       bitDiff = path a `xor` path b
       maskDiff = mask a `xor` mask b
 
 split :: Patricia -> Word64 -> (Patricia, Patricia)
-split p pos
+split !p !pos
   | path p .&. pos == 0 = (p, Null)
   | otherwise = (Null, p)
 
+singleton :: Word64 -> Patricia
 singleton v = Inner (C.hash $ block v) v oneBits Null Null
 
-mergeRight a b pos
+mergeRight :: Patricia -> Patricia -> Word64 -> Counting Patricia
+mergeRight !a !b !pos
   | path b .&. pos == 0 = do
       l <- lub (left a) b
       let r = right a
@@ -57,6 +63,8 @@ mergeRight a b pos
       let l = left a
       writer $ (Inner (hash l `mergeHash` hash r) (path a) (mask a) l r, Sum 1)
 
+oneNull a b = assert (a == Null || b == Null)
+
 instance Msg Patricia where
   noMsgs = Null
   lub Null b = return b
@@ -64,8 +72,8 @@ instance Msg Patricia where
   lub a b       
       | hash a == hash b = return a
       | pos .&. mask a .&. mask b /= 0 = do -- diff in both masks
-          l <- lub x1 y1
-          r <- lub x2 y2
+          l <- oneNull x1 x2 $ lub x1 y1
+          r <- oneNull x2 y2 $ lub x2 y2
           writer (Inner (hash l `mergeHash` hash r) (path a) (pos - 1) l r, Sum 1)
       | pos .&. (mask a .|. mask b) == 0 = do -- diff not in either mask
           l <- lub (left a) (left b)
@@ -79,3 +87,6 @@ instance Msg Patricia where
       (x1, x2) = split a pos
       (y1, y2) = split b pos
   atTime t _ = singleton (encode t)
+
+-- There's an infinite loop somewhere.
+-- 

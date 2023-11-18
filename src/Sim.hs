@@ -3,13 +3,9 @@ import Data.Random
 import Data.Random.Distribution.Exponential
 import System.Random.SplitMix
 import qualified Data.Vector.Mutable as V
-import Data.Vector (unsafeFreeze, Vector)
 import qualified Data.List.Ordered as O
-import Control.Monad
-import Control.Parallel
 import Control.Monad.Writer.Strict
 import Control.Applicative
-import Patricia
 import Data.Word
 import Msg
 import Data.Traversable.Compat
@@ -46,10 +42,11 @@ process s v (Create i _ t) = do
 process _ v (Send i j _ _) = do
   (a, wa) <- V.read v i
   (b, wb) <- V.read v j
-  let (ab, dw) = fmap getSum . runWriter $ lub a b
+  let (!ab, !dw) = fmap getSum . runWriter $ lub a b
   V.write v i (ab, wa + dw)
   V.write v j (ab, wb + dw)
-  return $ (ab `seq` dw) `par` (v, 2 * fromIntegral dw / fromIntegral (V.length v))
+  return $ (v, 2 * fromIntegral dw / fromIntegral (V.length v))
+
 
 mkCreate :: Int -> Double -> Double -> Action
 mkCreate i t e = Create i t (t - e)
@@ -67,10 +64,8 @@ creates v a i = do
   noise <- ZipList . samples (Normal 0 v) <$> newSMGen
   return $ getZipList $ mkCreate i <$> times <*> noise
 
-interval = 0.5
-
 sampleSum :: Double -> Int -> [(Double, a)] -> [a]
-sampleSum interval _ [] = []
+sampleSum _ _ [] = []
 sampleSum interval prev ((t, s):xs) = replicate (n - prev) s ++ sampleSum interval n xs where
   n = floor $ t / interval
 
@@ -88,5 +83,6 @@ simulate st v b a n t = do
   start <- V.replicate n (st, 0)
   let life = takeWhile (\x-> time x < t) events
   (_, counts) <- mapAccumM (process (v + b)) start life
+  let interval = 1.0
   return ([0,interval..t], sampleSum interval (-1) $ zip (time <$> life)  (scanl1 (+) counts))
 

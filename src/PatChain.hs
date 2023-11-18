@@ -9,7 +9,7 @@ data PatChain = Null | Cons Int Hash Patricia PatChain deriving Show
 cons :: Int -> Patricia -> PatChain -> PatChain
 cons t p Null = Cons t (hash p) p Null
 cons t p c@(Cons _ h _ _) = Cons t h' p c where
-  h' = block t `mergeHash` h
+  h' = hash p `mergeHash` h
 
 instance Msg PatChain where
   noMsgs = Null

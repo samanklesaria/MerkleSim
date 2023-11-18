@@ -50,14 +50,14 @@ toSet :: Patricia -> S.Set BinWord
 toSet = S.fromList . toList
 
 prop_dec_enc :: Property
-prop_dec_enc = forAll (vector 20) $ \x-> within 3000 $ toSet (fromList x) === S.fromList x
+prop_dec_enc = withMaxSuccess 1000 $ forAll (vector 20) $ \x-> within 3000 $ toSet (fromList x) === S.fromList x
 
 prop_commutative :: Property
-prop_commutative = forAll (vectorOf 5 (vector 5)) $ \x-> within 5000 $ do
-  y <- shuffle x
-  let a = foldMap fromList y
-      b = foldMap fromList x
-  return $ a === b
+prop_commutative = withMaxSuccess 2000 $ forAll (vectorOf 4 (vector 5)) $ \x->
+  forAll (shuffle x) $ \y-> within 5000 $
+    let a = foldMap fromList y
+        b = foldMap fromList x
+    in counterexample (show y) $ a === b
 
 prop_idemp :: Property
 prop_idemp = forAll (vectorOf 5 (vector 5)) $ \x-> within 8000 $ do
