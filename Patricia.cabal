@@ -44,7 +44,7 @@ library
 
 executable proglet
   main-is: Main.hs
-  build-depends: base, Patricia, vector, Chart, Chart-cairo, deepseq, parallel
+  build-depends: base, Patricia, vector, Chart, Chart-cairo, deepseq, parallel, mtl
   ghc-options:
     -O2
     -threaded
