@@ -24,7 +24,7 @@ parallel xs = foldl' (flip par) xs xs
 
 shapes = [PointShapeCircle, PointShapePlus, PointShapeCross]
 
-colors = map opaque [aliceblue, orangered, green]
+colors = map opaque [blue, orangered, green]
 
 testAll :: (forall a. Msg a => a -> IO (Vector (Double, Double)))
   -> IO [Vector (Double, Double)]
