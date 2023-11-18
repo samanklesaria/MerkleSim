@@ -22,10 +22,12 @@ maintainer:         anklesaria@utexas.edu
 extra-source-files: CHANGELOG.md
 
 library
-    exposed-modules:  Patricia, Sim, Msg, Chain, PatChain
+    exposed-modules:  Patricia, Sim, Msg, Chain, PatChain, PatriciaTest, Util, PatChainTest
     default-extensions: FlexibleContexts, FlexibleInstances, TemplateHaskell, TupleSections,
                         ViewPatterns, NumericUnderscores, BangPatterns, ScopedTypeVariables,
-                        DeriveFoldable, KindSignatures, TypeApplications
+                        DeriveFoldable, KindSignatures, TypeApplications, OverloadedLists,
+                        StrictData, BinaryLiterals, DeriveGeneric, DeriveAnyClass,
+                        GeneralizedNewtypeDeriving, DerivingStrategies
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -33,8 +35,8 @@ library
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
     build-depends:    base, splitmix, random-fu, data-ordlist,
-                      bytestring, QuickCheck, vector, containers, parallel,
-                      cryptohash, mtl, base-compat
+                      QuickCheck, vector, containers, parallel, deepseq,
+                      mtl, base-compat, memory, cryptonite, basement
     hs-source-dirs:   src
     default-language: Haskell2010
     ghc-options: -O2
@@ -42,9 +44,10 @@ library
 
 executable proglet
   main-is: Main.hs
-  build-depends: base, Patricia, vector, Chart, Chart-cairo, parallel
+  build-depends: base, Patricia, vector, Chart, Chart-cairo, deepseq
   ghc-options:
     -O2
     -threaded
-    -- -fprof-auto
-    -- "-with-rtsopts=-N -p -s -hc -i0.1"
+    -- fprof-auto
+    -- "-with-rtsopts=-N -p"
+    -- "-with-rtsopts=-N -p -s -xt -hy -l-agu -i0.1"

@@ -82,8 +82,8 @@ simulate :: Msg a => a -- | Initial state at each node
   -> Double -- | End time of simulation
   -> IO ([Double], [Double])
 simulate st v b a n t = do
-  sendActions <- mapM (sends v b n) [0..n-1]
-  createActions <- mapM (creates v a) [0..n-1]
+  sendActions <- mapM (sends v b n) ([0..n-1] :: [Int])
+  createActions <- mapM (creates v a) ([0..n-1] :: [Int])
   let events = foldr O.merge [] (sendActions <> createActions)
   start <- V.replicate n (st, 0)
   let life = takeWhile (\x-> time x < t) events

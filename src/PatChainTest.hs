@@ -8,26 +8,23 @@ import Test.QuickCheck
 import Control.Monad.Writer.Strict
 import qualified PatriciaTest as PT
 import Data.List (sort)
-import Patricia (BitString, encode)
+import Util
+import Data.Word
 
-instance Rate () where
-    rate _ = 0.3
+fromList :: [Double] -> PatChain
+fromList ds = foldMap (\t-> atTime t 0.3) ds
 
-fromList :: [Double] -> PatChain ()
-fromList ds = foldMap (\t-> singleton Proxy t $ atTime t) ds
-
-fromSet :: Set Double -> PatChain ()
+fromSet :: Set Double -> PatChain
 fromSet = fromList . S.toDescList
 
-prop_as_set x y = good === mine where
-  good = sort $ map encode $ S.toList (S.union x y)
+prop_as_set x y = counterexample it $ good === mine where
+  good = sort $ map (BinWord . encode) $ S.toList (S.union x y)
   mine = sort $ toList (fst $ runWriter $ lub (fromSet x) (fromSet y))
+  it = show (fromSet x, fromSet y)
 
-toList :: PatChain () -> [BitString]
+toList :: PatChain -> [BinWord]
 toList Null = []
-toList (Cons _ _ p c) = PT.toList p ++ toList c
-
--- TODO: these tests could be shared by all the different set representations
+toList (Cons _ _ p c) = (PT.toList p) ++ toList c
 
 return []
 runTests = $quickCheckAll

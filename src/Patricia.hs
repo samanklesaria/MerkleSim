@@ -1,47 +1,32 @@
 {-# LANGUAGE StrictData #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Patricia where
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as B
-import Data.Vector.Unboxed (Vector)
-import qualified Data.Vector.Unboxed as V
-import Data.Maybe
 import Data.Word
 import Data.Bits
+import Data.Bits.Compat
 import Control.Monad.Writer.Strict
 import Msg
-import qualified Crypto.Hash.MD5 as C
-import Data.ByteString.Builder
-
-type BitString = Vector Bool
-
-encode :: Double -> BitString
-encode = fromByteString . C.hashlazy . toLazyByteString . doubleBE
-
-fromByteString :: ByteString -> BitString
-fromByteString = mconcat . map blast . B.unpack
-
-blast :: Word8 -> BitString
-blast w = V.generate 8 (testBit w)
-
-toByteString :: BitString -> ByteString
-toByteString = undefined
+import Util
+import qualified Crypto.Hash as C
+import GHC.Generics (Generic)
+import Control.DeepSeq
 
 data Patricia = Null | Inner {
-  hash_ :: ByteString, path_::BitString, val::Bool,
-  left::Patricia, right::Patricia} deriving Show
+  hash :: Hash, path:: Word64, mask :: Word64,
+  left::Patricia, right::Patricia} deriving (Generic, NFData)
 
-hash :: Patricia -> Maybe ByteString
-hash Null = Nothing
-hash p = Just $ hash_ p
+instance Eq Patricia where
+  Null == Null = True
+  Null == _ = False
+  _ == Null = False
+  a == b = hash a == hash b && mask a == mask b && (path a .&. mask a) == (path b .&. mask b) &&
+             left a == left b && right a == right b
 
-path :: Patricia -> BitString
-path Null = V.empty
-path p = path_ p
-
-setPath :: Patricia -> BitString -> Patricia
-setPath Null _ = Null
-setPath a b = a{path_=b}
+instance Show Patricia where
+  show Null = "Null"
+  show p = "In {hash= " ++ show (hash p) ++ " path=" ++ show (BinWord (path p .&. mask p)) ++
+           " mask=" ++ show (popCount $ mask p) ++ " l=" ++ show (left p) ++ " r=" ++
+           show (right p) ++ "}"
 
 instance Semigroup Patricia where
   a <> b = fst . runWriter $ lub a b
@@ -49,41 +34,48 @@ instance Semigroup Patricia where
 instance Monoid Patricia where
   mempty = Null
 
+rightmost a = a .&. (-a)
+
+diffPos a b = rightmost (bitDiff .|. maskDiff) where
+      bitDiff = path a `xor` path b
+      maskDiff = mask a `xor` mask b
+
+split :: Patricia -> Word64 -> (Patricia, Patricia)
+split p pos
+  | path p .&. pos == 0 = (p, Null)
+  | otherwise = (Null, p)
+
+singleton v = Inner (C.hash $ block v) v oneBits Null Null
+
+mergeRight a b pos
+  | path b .&. pos == 0 = do
+      l <- lub (left a) b
+      let r = right a
+      writer (Inner (hash l `mergeHash` hash r) (path a) (mask a) l r, Sum 1)
+  | otherwise = do
+      r <- lub (right a) b
+      let l = left a
+      writer $ (Inner (hash l `mergeHash` hash r) (path a) (mask a) l r, Sum 1)
+
 instance Msg Patricia where
   noMsgs = Null
-  lub a b
+  lub Null b = return b
+  lub a Null = return a
+  lub a b       
       | hash a == hash b = return a
-      | V.length (path a) > V.length (path b) = merge (b,a) (path b) (path a) []
-      | otherwise = merge (a,b) (path a) (path b) []
-  atTime t _ = singleton .  C.hashlazy . toLazyByteString $ doubleBE t
+      | pos .&. mask a .&. mask b /= 0 = do -- diff in both masks
+          l <- lub x1 y1
+          r <- lub x2 y2
+          writer (Inner (hash l `mergeHash` hash r) (path a) (pos - 1) l r, Sum 1)
+      | pos .&. (mask a .|. mask b) == 0 = do -- diff not in either mask
+          l <- lub (left a) (left b)
+          r <- lub (right a) (right b)
+          writer (Inner (hash l `mergeHash` hash r) (path a) (mask a) l r, Sum 1)
+      | (pos .&. mask b /= 0) = mergeRight a b pos -- diff in b
+      | (pos .&. mask a /= 0) = mergeRight b a pos -- diff in a
 
-singleton :: ByteString -> Patricia
-singleton a = Inner a (fromByteString a) True Null Null
-
-mk :: MonadWriter (Sum Word64) m => Bool -> Patricia -> Patricia -> [Bool] -> m Patricia
-mk v l r s =  writer (Inner h p v l r, Sum 1) where
-  p = V.fromList $ reverse s
-  h = C.finalize $ C.updates C.init $ [toByteString p | v] ++ catMaybes [hash r, hash l]
-
-merge :: (Patricia, Patricia) -- | A pair of tries
-         -> BitString -- | Remaining shared bits of left tree
-         -> BitString -- | Remaining shared bits of right tree
-         -> [Bool] -- | Shared bits of both (backwards)
-         -> Counting Patricia
-
-merge (Null, a) _ _ _ = return a
-merge (a, Null) _ _ _ = return a
-merge (a,b) (V.uncons -> Nothing) (V.uncons -> Nothing) s = do
-  l <- left a `lub` left b
-  r <- right a `lub` right b
-  mk (val a || val b) l r s
-merge (a,b) (V.uncons -> Nothing) y@(V.uncons -> Just (True, _)) s = do
-  r <- right a `lub` setPath b y
-  mk (val a) (left a) r s
-merge (a,b) (V.uncons -> Nothing) y@(V.uncons -> Just (False, _)) s = do
-  l <- left a `lub` setPath b y
-  mk (val a) l (right a) s 
-merge (a,b) x@(V.uncons -> Just (p,ps)) y@(V.uncons -> Just (q,qs)) s
-      | p == q = merge (a,b) ps qs (p : s)
-      | p < q = mk False a{path_=x} (setPath b y) s
-      | otherwise = mk False (setPath b y) (setPath a x) s
+    where
+      pos = diffPos a b
+      (x1, x2) = split a pos
+      (y1, y2) = split b pos
+  atTime t _ = singleton (encode t)
