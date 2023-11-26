@@ -21,7 +21,7 @@ instance Msg PatChain Double where
       | t1 > t2 = writer (cons t1 p1, Sum 1) <*> lub xs b
       | otherwise = writer (cons t2 p2, Sum 1) <*> lub ys a
   atTime t s = Cons c (hash p) p Null where
-    p = atTime t s
+    p = atTime t ()
     c = ceiling (t / s)
 
 instance Semigroup PatChain where

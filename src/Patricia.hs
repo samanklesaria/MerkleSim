@@ -1,4 +1,3 @@
-{-# LANGUAGE StrictData #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Patricia where
 import Data.Word
@@ -10,7 +9,6 @@ import Util
 import qualified Crypto.Hash as C
 import GHC.Generics (Generic)
 import Control.DeepSeq
-import Control.Exception (assert)
 
 data Patricia = Null | Inner {
   hash :: Hash, path:: Word64, mask :: Word64,
@@ -63,8 +61,6 @@ mergeRight !a !b !pos
       let l = left a
       writer $ (Inner (hash l `mergeHash` hash r) (path a) (mask a) l r, Sum 1)
 
-oneNull a b = assert (a == Null || b == Null)
-
 instance Msg Patricia () where
   noMsgs = Null
   lub Null b = return b
@@ -72,8 +68,8 @@ instance Msg Patricia () where
   lub a b       
       | hash a == hash b = return a
       | pos .&. mask a .&. mask b /= 0 = do -- diff in both masks
-          l <- oneNull x1 x2 $ lub x1 y1
-          r <- oneNull x2 y2 $ lub x2 y2
+          l <- lub x1 y1
+          r <- lub x2 y2
           writer (Inner (hash l `mergeHash` hash r) (path a) (pos - 1) l r, Sum 1)
       | pos .&. (mask a .|. mask b) == 0 = do -- diff not in either mask
           l <- lub (left a) (left b)
