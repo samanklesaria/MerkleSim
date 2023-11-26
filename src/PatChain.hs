@@ -11,7 +11,7 @@ cons t p Null = Cons t (hash p) p Null
 cons t p c@(Cons _ h _ _) = Cons t h' p c where
   h' = hash p `mergeHash` h
 
-instance Msg PatChain where
+instance Msg PatChain Double where
   noMsgs = Null
   lub a Null = return a
   lub Null b = return b

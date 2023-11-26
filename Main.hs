@@ -26,19 +26,18 @@ shapes = [PointShapeCircle, PointShapePlus, PointShapeCross]
 
 colors = map opaque [blue, orangered, green]
 
-testAll :: (forall a. Msg a => a -> IO (Vector (Double, Double)))
-  -> IO [Vector (Double, Double)]
-testAll f = parallel <$> sequence [
-  f (noMsgs :: Patricia), f (noMsgs :: Chain'), f (noMsgs :: PatChain)]
+p = fmap parallel . sequence
 
-theTests = sequence [
-  sequence [testAll $ test v 0.5 1 | v <- [0.5, 1, 2]],
-  sequence [testAll $ test 1 b 1 | b <- [0.5, 1, 2]],
-  sequence [testAll $ test 1 0.5 a | a <- [0.5, 1, 2]]]
+theTests = 
+  (p [test 0.5 b a (noMsgs :: Patricia) | b <- [0.5, 1, 2]] | a <- [0.5, 1, 2]],
+  [p [p [test 0.5 b a (noMsgs :: Chain') | c <- [0.5, 1, 2]] | b <- [0.5, 1, 2]] | a <- [0.5, 1, 2]],
+  [p [p [test 0.5 b a (noMsgs :: PatChain) | c <- [0.5, 1, 2]] | b <- [0.5, 1, 2]] | a <- [0.5, 1, 2]])
 
 main = do
   setNumCapabilities 27
-  results <- theTests
+  patIO, chainIO, patchainIO <- theTests
+  { pat <- patIO; chain <- chainIO; patchain <- patchainIO }
+  
   forM_ (zip ["Time Skew Scale", "Gossip Scale", "Sending Scale"] results) $ \(l, st)-> do
     toFile def (l ++ ".png") $ do
       modify $ (layout_x_axis . laxis_title .~ "seconds") . (layout_y_axis . laxis_title .~ "nodes examined")

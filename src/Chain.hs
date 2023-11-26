@@ -13,7 +13,7 @@ cons :: Double -> Chain' -> Chain'
 cons a Null = atTime a 1
 cons a b@(Cons _ h _) = Cons a (mergeHash h $ block a) b
 
-instance Msg Chain' where
+instance Msg Chain' Double where
   noMsgs = Null
   lub a Null = return a
   lub Null b = return b

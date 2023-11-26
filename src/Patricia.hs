@@ -65,7 +65,7 @@ mergeRight !a !b !pos
 
 oneNull a b = assert (a == Null || b == Null)
 
-instance Msg Patricia where
+instance Msg Patricia () where
   noMsgs = Null
   lub Null b = return b
   lub a Null = return a
