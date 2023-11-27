@@ -21,10 +21,12 @@ data Ty = ChainC | PatChainC | PatC | DagC
 
 materialize = V.fromList . uncurry zip
 
-test v b a ChainC = materialize <$> simulate (noMsgs :: Chain') v b a 100 1500
-test v b a PatChainC = materialize <$> simulate (noMsgs :: PatChain) v b a 100 1500
-test v b a PatC = materialize <$> simulate (noMsgs :: Patricia) v b a 100 1500
-test v b a DagC = materialize <$> simulate (noMsgs :: Dag) v b a 100 1500
+simtime = 500
+
+test v b a ChainC = materialize <$> simulate (noMsgs :: Chain') v b a 100 simtime
+test v b a PatChainC = materialize <$> simulate (noMsgs :: PatChain) v b a 100 simtime
+test v b a PatC = materialize <$> simulate (noMsgs :: Patricia) v b a 100 simtime
+test v b a DagC = materialize <$> simulate (noMsgs :: Dag) v b a 100 simtime
 
 parallel xs = foldl' (flip par) xs xs
 
@@ -62,7 +64,7 @@ main = do
   toFile def ("Time Skew Scale.png") $ do
     layout_title .= "Time Skew Scale Comparison"
     plotBaselines baselines ["chain-1", "patchain-1", "patricia", "dag"]
-    let spec = [(v, f) | v <- zip ["0.5, 2"] (tail shapes), f <- zip ["chain", "patchain"] colors]
+    let spec = [(v, f) | v <- zip ["0.5", "2"] (tail shapes), f <- zip ["chain", "patchain"] colors]
     forM_ (zip spec vtest) $ \(((v,sh), (st, c)), f)-> do
       setShapes [sh]
       setColors [c]
@@ -70,7 +72,7 @@ main = do
   toFile def ("Gossip Scale.png") $ do
     layout_title .= "Gossip Scale Comparison"
     plotBaselines baselines ["chain-0.5", "patchain-0.5", "patricia-0.5", "dag-0.5"]
-    let spec = [(v, f) | v <- zip ["1, 2"] (tail shapes), f <- zip labels colors]
+    let spec = [(v, f) | v <- zip ["1", "2"] (tail shapes), f <- zip labels colors]
     forM_ (zip spec btest) $ \(((v,sh), (st, c)), f)-> do
       setShapes [sh]
       setColors [c]
@@ -78,7 +80,7 @@ main = do
   toFile def ("Sending Scale.png") $ do
     layout_title .= "Sending Scale Comparison"
     plotBaselines baselines ["chain-1", "patchain-1", "patricia-1", "dag-1"]
-    let spec = [(v, f) | v <- zip ["0.5, 2"] (tail shapes), f <- zip labels colors]
+    let spec = [(v, f) | v <- zip ["0.5", "2"] (tail shapes), f <- zip labels colors]
     forM_ (zip spec atest) $ \(((v,sh), (st, c)), f)-> do
       setShapes [sh]
       setColors [c]

@@ -20,7 +20,7 @@ import Dag (Dag)
 materialize = V.fromList . uncurry zip
 
 main = do
-  v <- materialize <$> simulate (noMsgs :: Dag) 1 0.5 1 100 100
+  v <- materialize <$> simulate (noMsgs :: Dag) 1 0.5 1 100 200
   print v
   toFile def ("tester.png") $ do
     plot $ points "dag" $ V.toList v
