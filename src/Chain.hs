@@ -10,10 +10,10 @@ data Chain a = Null | Cons a Hash (Chain a) deriving (Show, Eq, Foldable)
 type Chain' = Chain Double
 
 cons :: Double -> Chain' -> Chain'
-cons a Null = atTime a 1
+cons a Null = atTime a 1 Null
 cons a b@(Cons _ h _) = Cons a (mergeHash h $ block a) b
 
-instance Msg Chain' Double where
+instance Msg Chain' where
   noMsgs = Null
   lub a Null = return a
   lub Null b = return b
@@ -22,4 +22,4 @@ instance Msg Chain' Double where
       | y == x = writer (cons x, Sum 1) <*>  lub xs ys
       | y > x = writer (cons y, Sum 1) <*> lub a ys
       | otherwise = writer (cons x, Sum 1) <*> lub xs b
-  atTime t _ = Cons t (C.hash $ block t) Null
+  atTime t _ _ = Cons t (C.hash $ block t) Null

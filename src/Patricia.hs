@@ -61,7 +61,7 @@ mergeRight !a !b !pos
       let l = left a
       writer $ (Inner (hash l `mergeHash` hash r) (path a) (mask a) l r, Sum 1)
 
-instance Msg Patricia () where
+instance Msg Patricia where
   noMsgs = Null
   lub Null b = return b
   lub a Null = return a
@@ -82,7 +82,7 @@ instance Msg Patricia () where
       pos = diffPos a b
       (x1, x2) = split a pos
       (y1, y2) = split b pos
-  atTime t _ = singleton (encode t)
+  atTime t _ _ = singleton (encode t)
 
 -- There's an infinite loop somewhere.
 -- 

@@ -7,12 +7,13 @@ import Msg
 import Util
 import Control.Monad.Writer.Strict
 import qualified Crypto.Hash as C
+import Data.Typeable
 
 type HashSet = Set Hash
 type Parents = Map Hash HashSet
 
 -- A Dag maps node ids to parent ids
-data Dag = Dag HashSet Parents deriving (Show, Eq)
+data Dag = Dag HashSet Parents deriving (Show, Eq, Typeable)
 
 instance Semigroup Dag where
   a <> b = fst . runWriter $ lub a b
@@ -36,9 +37,9 @@ chase1 m1 m2 s k = case M.lookup k m2 of
 
 singleton h l = Dag (S.singleton h) (M.singleton h l)  where
 
-instance Msg Dag HashSet where
+instance Msg Dag where
   noMsgs = mempty
-  atTime t l = singleton h l where
+  atTime t _ (Dag l _) = singleton h l where
     h = C.hashFinalize $ C.hashUpdates (C.hashUpdate C.hashInit (block t)) (S.toList l)
   lub (Dag h1 m1) (Dag h2 m2) = writer (res, Sum l) where
     s1 = S.foldl' (chase1 m1 m2) S.empty h1

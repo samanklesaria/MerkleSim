@@ -1,4 +1,5 @@
 module PatChain where
+import qualified Patricia
 import Patricia (Patricia, hash)
 import Msg
 import Control.Monad.Writer.Strict
@@ -11,7 +12,7 @@ cons t p Null = Cons t (hash p) p Null
 cons t p c@(Cons _ h _ _) = Cons t h' p c where
   h' = hash p `mergeHash` h
 
-instance Msg PatChain Double where
+instance Msg PatChain where
   noMsgs = Null
   lub a Null = return a
   lub Null b = return b
@@ -20,8 +21,8 @@ instance Msg PatChain Double where
       | t1 == t2 = cons t1 <$> lub p1 p2 <*> lub xs ys
       | t1 > t2 = writer (cons t1 p1, Sum 1) <*> lub xs b
       | otherwise = writer (cons t2 p2, Sum 1) <*> lub ys a
-  atTime t s = Cons c (hash p) p Null where
-    p = atTime t ()
+  atTime t s _ = Cons c (hash p) p Null where
+    p = atTime t s Patricia.Null
     c = ceiling (t / s)
 
 instance Semigroup PatChain where

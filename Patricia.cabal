@@ -25,7 +25,7 @@ library
     exposed-modules:  Patricia, Sim, Msg, Chain, PatChain, PatriciaTest, Util, PatChainTest, Dag
     default-extensions: FlexibleContexts, FlexibleInstances, TemplateHaskell,
                         ViewPatterns, NumericUnderscores, BangPatterns, ScopedTypeVariables,
-                        DeriveFoldable, OverloadedLists, FunctionalDependencies,
+                        DeriveFoldable, OverloadedLists,
                         StrictData, BinaryLiterals, DeriveGeneric, DeriveAnyClass,
                         GeneralizedNewtypeDeriving, DerivingStrategies
 

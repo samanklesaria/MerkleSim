@@ -12,7 +12,7 @@ import Util
 import Data.Word
 
 fromList :: [Double] -> PatChain
-fromList ds = foldMap (\t-> atTime t 0.3) ds
+fromList = foldMap (\t-> atTime t 0.3 Null)
 
 fromSet :: Set Double -> PatChain
 fromSet = fromList . S.toDescList

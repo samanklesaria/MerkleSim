@@ -33,10 +33,10 @@ mkSend n i j t e
     | i == j = Send i (n-1) t (t-e)
     | otherwise = Send i j t (t-e)
 
-process :: Msg a b => b -> MVec (a, Word64) -> Action -> IO (MVec (a, Word64), Double)
+process :: Msg a => Double -> MVec (a, Word64) -> Action -> IO (MVec (a, Word64), Double)
 process s v (Create i _ t) = do
   (a, w) <- V.read v i
-  let (a', dw) = fmap getSum . runWriter $ lub a (atTime t s)
+  let (a', dw) = fmap getSum . runWriter $ lub a (atTime t s a)
   V.write v i (a', w + dw)
   return (v, fromIntegral dw / fromIntegral (V.length v))
 process _ v (Send i j _ _) = do
@@ -69,7 +69,7 @@ sampleSum _ _ [] = []
 sampleSum interval prev ((t, s):xs) = replicate (n - prev) s ++ sampleSum interval n xs where
   n = floor $ t / interval
 
-simulate :: Msg a b => a -- | Initial state at each node
+simulate :: Msg a => a -- | Initial state at each node
   -> Double -- | Scale of noise distribution
   -> Double -- | Scale of gossip Poisson process
   -> Double -- | Scale of message generation Poisson process
