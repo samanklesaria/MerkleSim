@@ -21,10 +21,10 @@ data Ty = ChainC | PatChainC | PatC | DagC
 
 materialize = V.fromList . uncurry zip
 
-test v b a ChainC = materialize <$> simulate (noMsgs :: Chain') v b a 100 100
-test v b a PatChainC = materialize <$> simulate (noMsgs :: PatChain) v b a 100 100
-test v b a PatC = materialize <$> simulate (noMsgs :: Patricia) v b a 100 100
-test v b a DagC = materialize <$> simulate (noMsgs :: Dag) v b a 100 100
+test v b a ChainC = materialize <$> simulate (noMsgs :: Chain') v b a 100 1500
+test v b a PatChainC = materialize <$> simulate (noMsgs :: PatChain) v b a 100 1500
+test v b a PatC = materialize <$> simulate (noMsgs :: Patricia) v b a 100 1500
+test v b a DagC = materialize <$> simulate (noMsgs :: Dag) v b a 100 1500
 
 parallel xs = foldl' (flip par) xs xs
 
@@ -39,7 +39,7 @@ dyns = [ChainC, PatChainC, PatC, DagC]
 vdyns = [ChainC, PatChainC]
 
 theTests :: IO [[Vector (Double, Double)]]
-theTests = sequence [
+theTests = p [
   p [test 1 0.5 1 s | s <- dyns],
   p [test v 0.5 1 s | v <- [0.5, 2], s <- vdyns],
   p [test 1 b 1 s | b <- [1, 2], s <- dyns],
