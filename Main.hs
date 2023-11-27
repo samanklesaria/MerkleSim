@@ -21,10 +21,10 @@ data Ty = ChainC | PatChainC | PatC | DagC
 
 materialize = V.fromList . uncurry zip
 
-test v b a ChainC = materialize <$> simulate (noMsgs :: Chain') v b a 100 200
-test v b a PatChainC = materialize <$> simulate (noMsgs :: PatChain) v b a 100 200
-test v b a PatC = materialize <$> simulate (noMsgs :: Patricia) v b a 100 200
-test v b a DagC = materialize <$> simulate (noMsgs :: Dag) v b a 100 200
+test v b a ChainC = materialize <$> simulate (noMsgs :: Chain') v b a 100 1500
+test v b a PatChainC = materialize <$> simulate (noMsgs :: PatChain) v b a 100 1500
+test v b a PatC = materialize <$> simulate (noMsgs :: Patricia) v b a 100 1500
+test v b a DagC = materialize <$> simulate (noMsgs :: Dag) v b a 100 1500
 
 parallel xs = foldl' (flip par) xs xs
 
@@ -57,7 +57,7 @@ plotBaselines baselines labels = do
     plot $ points st $ V.toList f
 
 main = do
-  setNumCapabilities 7
+  setNumCapabilities 27
   [baselines, vtest, btest, atest] <- theTests
   toFile def ("Time Skew Scale.png") $ do
     layout_title .= "Time Skew Scale Comparison"

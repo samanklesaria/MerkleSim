@@ -83,6 +83,6 @@ simulate st v b a n t = do
   start <- V.replicate n (st, 0)
   let life = takeWhile (\x-> time x < t) events
   (_, counts) <- mapAccumM (process (v + b)) start life
-  let interval = 1.0
+  let interval = 10.0
   return ([0,interval..t], sampleSum interval (-1) $ zip (time <$> life)  (scanl1 (+) counts))
 
